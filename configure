@@ -1,0 +1,79 @@
+#!/bin/sh
+
+prefix=/usr/local
+bindir='${prefix}/bin'
+sbindir='${prefix}/sbin'
+sysconfdir='${prefix}/etc'
+
+enable_dhcp=no
+enable_debug_console=yes
+enable_sbin_init=no
+enable_watchdog=no
+
+dhcp_iface=eth0
+debug_tty=tty1
+watchdog_period=5
+
+usage() {
+    cat <<EOF
+Usage: ./configure [OPTION]...
+
+Defaults for the options are specified in brackets.
+
+Configuration:
+  -h, --help               display this help and exit
+
+Installation directories:
+  --prefix=PREFIX          install architecture-independent files in PREFIX
+                           [${prefix}]
+
+Fine tuning of the installation directories:
+  --bindir=DIR             user executables [PREFIX/bin]
+  --sbindir=DIR            system admin executables [PREFIX/sbin]
+  --sysconfdir=DIR         read-only single-machine data [PREFIX/etc]
+
+Optional Features:
+  --enable-debug-console   spawn a logging prompt very early during boot [${enable_debug_console}]
+  --enable-dhcp            configure network interface via DHCP [${enable_dhcp}]
+  --enable-sbin-init       symlink /sbin/s6-init to /sbin/init [${enable_sbin_init}]
+  --enable-watchdog        enable watchdog support [${enable_watchdog}]
+
+Optional Packages:
+  --with-dhcp-iface=IFACE  set network interface to configure via DHCP [${dhcp_iface}]
+  --with-debug-tty=TTY     set TTY to use for debug console [${debug_tty}]
+  --with-watchdog-period=N set watchdog period to N seconds [${watchdog_period}]
+EOF
+}
+
+for arg; do
+    case "$arg" in
+        --help) usage ;;
+        --prefix=*) prefix=${arg#*=} ;;
+        --bindir=*) bindir=${arg#*=} ;;
+        --sbindir=*) sbindir=${arg#*=} ;;
+        --sysconfdir=*) sysconfdir=${arg#*=} ;;
+        --enable-debug-console=*) enable_debug_console=${arg#*=} ;;
+        --enable-dhcp=*) enable_dhcp=${arg#*=} ;;
+        --enable-sbin-init=*) enable_sbin_init=${arg#*=} ;;
+        --enable-watchdog=*) enable_watchdog=${arg#*=} ;;
+        --with-debug-tty=*) debug_tty=${arg#*=} ;;
+        --with-dhcp-iface=*) dhcp_iface=${arg#*=} ;;
+        --with-watchdog-period=*) watchdog_period=${arg#*=} ;;
+        -* ) echo "$0: unknown option $arg" ;;
+        *=*) ;;
+    esac
+done
+
+rm -f Makefile
+sed -e "s;@prefix@;${prefix};g" \
+    -e "s;@bindir@;${bindir};g" \
+    -e "s;@sbindir@;${sbindir};g" \
+    -e "s;@sysconfdir@;${sysconfdir};g" \
+    -e "s;@enable_debug_console@;${enable_debug_console};g" \
+    -e "s;@enable_dhcp@;${enable_dhcp};g" \
+    -e "s;@enable_sbin_init@;${enable_sbin_init};g" \
+    -e "s;@enable_watchdog@;${enable_watchdog};g" \
+    -e "s;@debug_tty@;${debug_tty};g" \
+    -e "s;@dhcp_iface@;${dhcp_iface};g" \
+    -e "s;@watchdog_period@;${watchdog_period};g" \
+    Makefile.in > Makefile

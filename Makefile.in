@@ -1,0 +1,63 @@
+DESTDIR =
+prefix := @prefix@
+bindir = @bindir@
+sbindir = @sbindir@
+sysconfdir = @sysconfdir@
+
+s6_rc_source := tools/s6-rc-source
+services_srcdir := $(DESTDIR)$(sysconfdir)/s6-rc/source
+
+enable_debug_console = @enable_debug_console@
+enable_dhcp = @enable_dhcp@
+enable_sbin_init = @enable_sbin_init@
+enable_watchdog = @enable_watchdog@
+
+debug_tty = @debug_tty@
+dhcp_iface = @dhcp_iface@
+watchdog_period = @watchdog_period@
+
+ifeq ($(enable_sbin_init),yes)
+define replace_sbin_init
+	(cd $(DESTDIR)$(sbindir); ln -sf s6-init init)
+endef
+endif
+
+ifeq ($(enable_debug_console),yes)
+define setup_debug_console
+	echo $(debug_tty) > \
+		$(DESTDIR)$(sysconfdir)/s6-init/run-image/service/getty/env/TTY
+	rm -f $(DESTDIR)$(sysconfdir)/s6-init/run-image/service/getty/down
+endef
+else
+define setup_debug_console
+	touch $(DESTDIR)$(sysconfdir)/s6-init/run-image/service/getty/down
+endef
+endif
+
+ifeq ($(enable_dhcp),yes)
+define setup_dhcp
+	$(s6_rc_source) render udhcpc-@ default setup-net $(services_srcdir)
+	echo $(dhcp_iface) > $(services_srcdir)/udhcpc-default/env/INTERFACE
+	ln -sf ../run/resolv.conf $(DESTDIR)$(sysconfdir)/resolv.conf
+endef
+endif
+
+ifeq ($(enable_watchdog),yes)
+define setup_watchdog
+	$(s6_rc_source) add watchdog services-local $(services_srcdir)
+	echo $(watchdog_period) > $(services_srcdir)/watchdog/env/PERIOD
+endef
+endif
+
+all:
+
+install:
+	rm -rf $(services_srcdir)
+	install -d -m 0775 $(DESTDIR)$(sysconfdir)
+	cp -a data/skeleton/etc/* $(DESTDIR)$(sysconfdir)
+	install -d -m 0775 $(DESTDIR)$(sbindir)
+	cp -a data/skeleton/sbin/* $(DESTDIR)$(sbindir)
+	$(setup_debug_console)
+	$(setup_dhcp)
+	$(setup_watchdog)
+	$(replace_sbin_init)
