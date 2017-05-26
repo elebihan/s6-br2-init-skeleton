@@ -7,8 +7,8 @@ backtick -in ROOTFS_DEVICE
 }
 multisubstitute
 {
-  import REMOUNT_ROOTFS_RW
-  import ROOTFS_DEVICE
+  importas REMOUNT_ROOTFS_RW REMOUNT_ROOTFS_RW
+  importas ROOTFS_DEVICE ROOTFS_DEVICE
 }
 if -t { s6-test "$REMOUNT_ROOTFS_RW" = "yes" }
 if { s6-echo "Remounting root filesystem in r/w mode" }
